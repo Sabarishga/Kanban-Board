@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+
+html,
+body,
+#root {
+  background-color: #2d333d;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.task > ::-webkit-scrollbar-thumb {
+  background-color: #207bb8;
+  border: radius x 1px; ;
+}
