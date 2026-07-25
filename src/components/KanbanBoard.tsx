@@ -7,7 +7,7 @@ import { arrayMove, SortableContext } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import TaskCard from './TaskCard';
 
-const STORAGE_KEY = 'kanban-board-state-v1';
+const STORAGE_KEY = 'kanban-board-state-v2';
 
 const defaultColumns: Column[] = [
   { id: 'todo', title: 'To Do' },
