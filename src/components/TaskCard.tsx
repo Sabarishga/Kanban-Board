@@ -47,7 +47,7 @@ function TaskCard({ task, deleteTask, updateTask }: Props) {
         className='flex min-h-30 flex-col gap-2 rounded-xl border border-blue-400 bg-gray-700 p-3 text-left shadow-sm'
       >
         <input
-          className='rounded bg-gray-800 px-2 py-1 text-sm text-white outline-none focus:ring-1 focus:ring-blue-400'
+          className='rounded bg-gray-800 px-2 py-1 text-sm text-white outline-none focus:ring-1 focus:ring-blue-400 '
           value={task.title}
           autoFocus
           placeholder='Task title'
