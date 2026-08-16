@@ -57,7 +57,7 @@ function ColumnContainer(props: Props) {
         {...attributes}
         {...listeners}
         onClick={() => setEditMode(true)}
-        className='flex h-12 items-center justify-between rounded-t-md border-b border-gray-800 bg-gray-700 px-3 py-2 text-center text-md font-bold text-white'
+        className='flex h-12 items-center justify-between rounded-t-md border-b border-gray-800 bg-gray-700 px-0 py-2 text-center text-md font-bold text-white'
       >
         <div className='flex items-center gap-3'>
           <div className='flex h-7 min-w-7 items-center justify-center rounded-full bg-gray-800 px-2 text-sm'>
@@ -67,7 +67,7 @@ function ColumnContainer(props: Props) {
           {!editMode && <span>{column.title}</span>}
           {editMode && (
             <input
-              className='rounded border border-gray-500 bg-gray-800 px-3 py-1 outline-none focus:border-blue-400'
+              className='rounded border border-gray-500 bg-gray-800 px-0 py-1 outline-none focus:border-blue-400'
               value={column.title}
               onChange={(event) => updateColumn(column.id, event.target.value)}
               autoFocus
