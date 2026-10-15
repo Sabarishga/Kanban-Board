@@ -54,7 +54,7 @@ function TaskCard({ task, deleteTask, onEdit }: Props) {
       onMouseLeave={() => setMouseIsOver(false)}
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="min-w-0 break-words text-sm font-semibold text-white">
+        <h3 className="min-w-0 wrap-break-word text-sm font-semibold text-white">
           {task.title}
         </h3>
         <span className="shrink-0 rounded-full bg-gray-800 px-2 py-0.5 text-[11px] text-blue-300">
@@ -62,7 +62,7 @@ function TaskCard({ task, deleteTask, onEdit }: Props) {
         </span>
       </div>
 
-      <p className="break-words text-sm text-gray-300">
+      <p className="wrap-break-word text-sm text-gray-300">
         {task.description || "Add a short description..."}
       </p>
 
@@ -98,7 +98,7 @@ export function TaskCardOverlay({ task }: { task: Task }) {
   return (
     <div className="flex min-h-30 flex-col gap-2 rounded-xl bg-gray-700 p-3 text-left shadow-lg ring-2 ring-inset ring-blue-400">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="min-w-0 break-words text-sm font-semibold text-white">
+        <h3 className="min-w-0 wrap-break-word text-sm font-semibold text-white">
           {task.title}
         </h3>
         <span className="shrink-0 rounded-full bg-gray-800 px-2 py-0.5 text-[11px] text-blue-300">
@@ -106,7 +106,7 @@ export function TaskCardOverlay({ task }: { task: Task }) {
         </span>
       </div>
 
-      <p className="break-words text-sm text-gray-300">
+      <p className="wrap-break-word text-sm text-gray-300">
         {task.description || "Add a short description..."}
       </p>
     </div>
