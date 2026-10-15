@@ -14,7 +14,8 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
-import TaskCard from "./TaskCard";
+import { TaskCardOverlay } from "./TaskCard";
+import TaskModal from "./TaskModal";
 
 const STORAGE_KEY = "kanban-board-state-v2";
 
@@ -93,6 +94,11 @@ function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>(getInitialTasks);
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [taskModal, setTaskModal] = useState<{
+    mode: "create" | "edit";
+    task: Task | null;
+    columnId?: Id;
+  } | null>(null);
 
   const columnIds = useMemo(
     () => columns.map((column) => column.id),
@@ -119,20 +125,60 @@ function KanbanBoard() {
   }, [columns, tasks]);
 
   const createTask = (columnId: Id) => {
-    setTasks((prevTasks) => {
-      const columnTaskCount = prevTasks.filter(
-        (task) => task.columnId === columnId,
-      ).length;
-      const newTask: Task = {
-        id: generateId(),
-        columnId,
-        title: `Task ${columnTaskCount + 1}`,
-        description: "Add more context for this task.",
-        priority: "Medium",
-      };
+    const columnTaskCount = tasks.filter((task) => task.columnId === columnId).length;
+    const newTask: Task = {
+      id: generateId(),
+      columnId,
+      title: `Task ${columnTaskCount + 1}`,
+      description: "Add more context for this task.",
+      priority: "Medium",
+    };
 
-      return [...prevTasks, newTask];
-    });
+    setTaskModal({ mode: "create", task: newTask, columnId });
+  };
+
+  const openTaskModal = (task: Task) => {
+    setTaskModal({ mode: "edit", task });
+  };
+
+  const closeTaskModal = () => {
+    setTaskModal(null);
+  };
+
+  const saveTask = (taskData: Partial<Task>) => {
+    if (!taskModal) {
+      return;
+    }
+
+    const currentTask =
+      taskModal.task ??
+      ({
+        id: generateId(),
+        columnId: taskModal.columnId ?? "todo",
+        title: "Task",
+        description: "",
+        priority: "Medium",
+      } as Task);
+
+    const normalizedTask = {
+      ...currentTask,
+      ...taskData,
+      title: taskData.title ?? currentTask.title ?? "Task",
+      description: taskData.description ?? currentTask.description ?? "",
+      priority: taskData.priority ?? currentTask.priority ?? "Medium",
+    } as Task;
+
+    if (taskModal.mode === "create") {
+      setTasks((prevTasks) => [...prevTasks, normalizedTask]);
+    } else {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === currentTask.id ? normalizedTask : task,
+        ),
+      );
+    }
+
+    setTaskModal(null);
   };
 
   const deleteTask = (id: Id) => {
@@ -150,7 +196,7 @@ function KanbanBoard() {
   const createNewColumn = () => {
     const newColumn: Column = {
       id: generateId(),
-      title: `Column ${columns.length + 1}`,
+      title: "New Column",
     };
 
     setColumns((prevColumns) => [...prevColumns, newColumn]);
@@ -192,6 +238,48 @@ function KanbanBoard() {
       return;
     }
 
+    if (active.data.current?.type === "Task") {
+      if (!activeTask) {
+        return;
+      }
+      const activeTaskColumnId = activeTask.columnId;
+
+      if (
+        over.data.current?.type !== "Task" ||
+        activeTaskColumnId !== over.data.current.task.columnId
+      ) {
+        return;
+      }
+
+      setTasks((prevTasks) => {
+        const columnTaskIndices = prevTasks.flatMap((task, index) =>
+          task.columnId === activeTaskColumnId ? [index] : [],
+        );
+        const activeIndex = columnTaskIndices.findIndex(
+          (index) => prevTasks[index].id === active.id,
+        );
+        const overIndex = columnTaskIndices.findIndex(
+          (index) => prevTasks[index].id === over.id,
+        );
+
+        if (activeIndex === -1 || overIndex === -1) {
+          return prevTasks;
+        }
+
+        const reorderedTasks = arrayMove(
+          columnTaskIndices.map((index) => prevTasks[index]),
+          activeIndex,
+          overIndex,
+        );
+        const nextTasks = [...prevTasks];
+        columnTaskIndices.forEach((index, taskIndex) => {
+          nextTasks[index] = reorderedTasks[taskIndex];
+        });
+        return nextTasks;
+      });
+      return;
+    }
+
     if (active.data.current?.type !== "Column") {
       return;
     }
@@ -229,19 +317,27 @@ function KanbanBoard() {
         const activeIndex = prevTasks.findIndex(
           (task) => task.id === activeTaskId,
         );
-        const overIndex = prevTasks.findIndex((task) => task.id === over.id);
+        const targetTask = prevTasks.find((task) => task.id === over.id);
 
-        if (activeIndex === -1 || overIndex === -1) {
+        if (
+          activeIndex === -1 ||
+          !targetTask ||
+          (prevTasks[activeIndex].columnId === targetTask.columnId &&
+            activeTask?.columnId === targetTask.columnId)
+        ) {
           return prevTasks;
         }
 
         const updatedTasks = [...prevTasks];
         const [movedTask] = updatedTasks.splice(activeIndex, 1);
-        const targetColumnId =
-          updatedTasks[overIndex - 1]?.columnId ??
-          prevTasks[overIndex].columnId;
-        const nextTask = { ...movedTask, columnId: targetColumnId };
-        updatedTasks.splice(overIndex, 0, nextTask);
+        const overIndex = updatedTasks.findIndex((task) => task.id === over.id);
+        const translatedRect = active.rect.current.translated;
+        const insertAfter =
+          translatedRect !== null &&
+          translatedRect.top + translatedRect.height / 2 >
+            over.rect.top + over.rect.height / 2;
+        const nextTask = { ...movedTask, columnId: targetTask.columnId };
+        updatedTasks.splice(overIndex + Number(insertAfter), 0, nextTask);
         return updatedTasks;
       });
       return;
@@ -253,15 +349,23 @@ function KanbanBoard() {
           (task) => task.id === activeTaskId,
         );
 
-        if (activeIndex === -1) {
+        if (
+          activeIndex === -1 ||
+          prevTasks[activeIndex].columnId === over.id
+        ) {
           return prevTasks;
         }
 
         const updatedTasks = [...prevTasks];
         const [movedTask] = updatedTasks.splice(activeIndex, 1);
-        updatedTasks.splice(activeIndex, 0, {
+        const lastTaskIndex = updatedTasks.reduce(
+          (lastIndex, task, index) =>
+            task.columnId === over.id ? index : lastIndex,
+          -1,
+        );
+        updatedTasks.splice(lastTaskIndex + 1, 0, {
           ...movedTask,
-          columnId: over.id,
+          columnId: over.id as Id,
         });
         return updatedTasks;
       });
@@ -288,6 +392,7 @@ function KanbanBoard() {
                   createTask={createTask}
                   deleteTask={deleteTask}
                   updateTask={updateTask}
+                  onEditTask={openTaskModal}
                   tasks={tasks.filter((task) => task.columnId === column.id)}
                 />
               ))}
@@ -318,16 +423,20 @@ function KanbanBoard() {
               />
             )}
             {activeTask && (
-              <TaskCard
-                task={activeTask}
-                deleteTask={deleteTask}
-                updateTask={updateTask}
-              />
+              <TaskCardOverlay task={activeTask} />
             )}
           </DragOverlay>,
           document.body,
         )}
       </DndContext>
+
+      {taskModal && (
+        <TaskModal
+          task={taskModal.task}
+          onClose={closeTaskModal}
+          onSave={saveTask}
+        />
+      )}
     </div>
   );
 }

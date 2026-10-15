@@ -13,6 +13,7 @@ interface Props {
   createTask: (columnId: Id) => void;
   updateTask: (id: Id, updates: Partial<Task>) => void;
   deleteTask: (id: Id) => void;
+  onEditTask?: (task: Task) => void;
   tasks: Task[];
 }
 
@@ -24,7 +25,7 @@ function ColumnContainer(props: Props) {
     createTask,
     tasks,
     deleteTask,
-    updateTask,
+    onEditTask,
   } = props;
 
   const [editMode, setEditMode] = useState(false);
@@ -74,15 +75,15 @@ function ColumnContainer(props: Props) {
         onClick={() => setEditMode(true)}
         className="flex h-12 items-center justify-between rounded-t-md border-b border-gray-800 bg-gray-700 py-2 text-center text-md font-bold text-white"
       >
-        <div className="flex items-center gap-3">
-          <div className="flex h-7 min-w-7 items-center justify-center rounded-full bg-gray-800 px-2 text-sm">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-gray-800 px-2 text-sm">
             {tasks.length}
           </div>
 
           {!editMode && <span>{column.title}</span>}
           {editMode && (
             <input
-              className="rounded border border-gray-500 bg-gray-800 py-1 outline-none focus:border-blue-400"
+              className="min-w-0 flex-1 rounded border border-gray-500 bg-gray-800 py-1 outline-none focus:border-blue-400"
               value={column.title}
               onChange={(event) => updateColumn(column.id, event.target.value)}
               autoFocus
@@ -101,20 +102,20 @@ function ColumnContainer(props: Props) {
             event.stopPropagation();
             deleteColumn(column.id);
           }}
-          className="rounded px-1 py-1 stroke-gray-300 hover:bg-gray-600 hover:stroke-white"
+          className="shrink-0 rounded px-1 py-1 stroke-gray-300 hover:bg-gray-600 hover:stroke-white"
         >
           <TrashIcon />
         </button>
       </div>
 
-      <div className="flex grow flex-col gap-3 overflow-x-hidden overflow-y-auto p-3">
+      <div className="flex min-h-0 grow flex-col gap-3 overflow-x-hidden overflow-y-auto p-3">
         <SortableContext items={tasksIds}>
           {tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
               deleteTask={deleteTask}
-              updateTask={updateTask}
+              onEdit={onEditTask}
             />
           ))}
         </SortableContext>
